@@ -2,9 +2,10 @@ export default {
   /**
    * Outside of localhost visibility
    */
-  // server: {
-  //   host: '0.0.0.0'
-  // },
+  server: {
+    host: '0.0.0.0',
+    port: '8124'
+  },
   /*
    ** Headers of the page
    */
@@ -203,7 +204,14 @@ export default {
    ** Build configuration
    */
   build: {
-    transpile: [/^element-ui/, 'system-design-components'],
+    transpile: [
+      /^element-ui/,
+      'system-design-components',
+      '@jsonforms/core',
+      '@jsonforms/vue2',
+      '@jsonforms/vue2-vanilla',
+      'ajv'
+  ],
     /*
      ** You can extend webpack config here
      */

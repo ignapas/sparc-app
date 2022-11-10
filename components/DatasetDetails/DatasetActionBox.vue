@@ -24,6 +24,13 @@
       </el-button>
     </div>
     <div class="button-container" v-else-if="datasetTypeName === 'computational model'">
+      <el-button @click="inputsDialogOpen = true">
+        Input demo
+      </el-button>
+      <computational-inputs-dialog
+        :open="inputsDialogOpen"
+        @close="inputsDialogOpen = false"
+      />
       <el-button v-if="canViewSimulation" @click="openSimulationViewer()">
         View Simulation
       </el-button>
@@ -84,13 +91,21 @@ import { mapGetters, mapState } from 'vuex'
 import { propOr } from 'ramda'
 import DatasetBannerImage from '@/components/DatasetBannerImage/DatasetBannerImage.vue'
 import SparcPill from '@/components/SparcPill/SparcPill.vue'
+import ComputationalInputsDialog from '@/components/DatasetDetails/ComputationalInputsDialog'
 
 export default {
   name: 'DatasetActionBox',
 
   components: {
     DatasetBannerImage,
-    SparcPill
+    SparcPill,
+    ComputationalInputsDialog
+  },
+
+  data() {
+    return {
+      inputsDialogOpen: false
+    }
   },
 
   computed: {
@@ -173,6 +188,9 @@ export default {
       link.click()
       link.remove()
     },
+    openInputsForm: function() {
+      alert('hola')
+    }
   }
 }
 </script>

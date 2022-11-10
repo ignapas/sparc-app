@@ -198,6 +198,5 @@ export default {
   margin-top: 1.5rem;
   height: 90vh;
   max-width: calc(100% - 48px);
-  @import '~@abi-software/plotvuer/dist/plotvuer';
 }
 </style>
