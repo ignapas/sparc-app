@@ -1,9 +1,19 @@
 <template>
   <el-dialog :show-close="false" :visible="open" @close="closeHandler" class="json-forms-dialog">
     <bf-dialog-header slot="title" title="Inputs demo" />
-    <form class="osparc-request-form" @submit="fetchOsparc">
+    <div>
+      <div class="selector-container">
+        <label><input type="radio" v-model="formType" value="service"/>Service</label>
+        <label><input type="radio" v-model="formType" value="study"/>Study</label>
+      </div>
+    </div>
+    <form v-if="formType === 'service'" class="osparc-request-form" @submit="fetchOsparc">
       <input name="service" value="simcore/services/comp/itis/sleeper"/>
       <input name="version" value="2.1.1"/>
+      <button type="submit">Fetch ports</button>
+    </form>
+    <form v-if="formType === 'study'" class="osparc-request-form" @submit="fetchOsparc">
+      <input name="service" placeholder="Enter service UUID" value="62d5c214-5aac-11ed-8a47-02420aa4f4af"/>
       <button type="submit">Fetch ports</button>
     </form>
     <dialog-body>
@@ -54,7 +64,8 @@ export default {
   data: () => ({
     schema: null,
     data,
-    renderers: Object.freeze(renderers)
+    renderers: Object.freeze(renderers),
+    formType: 'service'
   }),
   methods: {
     closeHandler() {
@@ -79,6 +90,9 @@ export default {
 }
 </script>
 <style lang="scss" scoped>
+.selector-container {
+  margin-bottom: 20px;
+}
 .json-forms-dialog {
   text-align: left;
 }
