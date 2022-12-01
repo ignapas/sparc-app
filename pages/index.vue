@@ -7,19 +7,6 @@
       <!-- eslint-disable vue/no-v-html -->
       <!-- marked will sanitize the HTML injected -->
       <div v-html="parseMarkdown(heroCopy)" />
-      <a
-        class="btn-link"
-        href="https://docs.sparc.science/docs/what-can-i-do-with-sparc"
-      >
-        <el-button class="secondary">
-          What can I do with SPARC?
-        </el-button>
-      </a>
-      <a v-if="heroButtonLink" class="btn-link" :href="heroButtonLink">
-        <el-button class="secondary">
-          {{ heroButtonLabel }}
-        </el-button>
-      </a>
       <img
         v-if="heroImage"
         slot="image"
@@ -29,20 +16,27 @@
     </page-hero>
 
     <featured-data :featured-data="featuredData" />
+    
+    <portal-features :features="portalFeatures" />
 
-    <homepage-news :news="newsAndEvents" />
+    <projects-and-datasets :project="featuredProject" :dataset="featuredDataset" />
 
-    <homepage-testimonials :testimonials="testimonials" />
+    <latest-news-and-events />
+
+    <stay-connected />
   </div>
 </template>
 
 <script>
 import PageHero from '@/components/PageHero/PageHero.vue'
 import FeaturedData from '@/components/FeaturedData/FeaturedData.vue'
-import HomepageNews from '@/components/HomepageNews/HomepageNews.vue'
-import HomepageTestimonials from '@/components/HomepageTestimonials/HomepageTestimonials.vue'
+import PortalFeatures from '@/components/PortalFeatures/PortalFeatures.vue'
+import ProjectsAndDatasets from '@/components/ProjectsAndDatasets/ProjectsAndDatasets.vue'
+import LatestNewsAndEvents from '@/components/LatestNewsAndEvents/LatestNewsAndEvents.vue'
+import StayConnected from '@/components/StayConnected/StayConnected.vue'
 
 import createClient from '@/plugins/contentful.js'
+import ContentfulErrorHandle from '@/mixins/contentful-error-handle'
 import marked from '@/mixins/marked/index'
 import getHomepageFields from '@/utils/homepageFields'
 
@@ -53,30 +47,51 @@ export default {
   components: {
     PageHero,
     FeaturedData,
-    HomepageNews,
-    HomepageTestimonials
+    PortalFeatures,
+    ProjectsAndDatasets,
+    LatestNewsAndEvents,
+    StayConnected
   },
 
-  mixins: [marked],
+  mixins: [ContentfulErrorHandle, marked],
 
-  asyncData() {
+  asyncData({ $axios }) {
     return Promise.all([
       // Get homepage content
       client.getEntry(process.env.ctf_home_page_id)
-    ])
-      .then(([homepage]) => {
-        return getHomepageFields(homepage.fields)
+    ]).then(async ([homepage]) => {
+        let fields = getHomepageFields(homepage.fields)
+        const featuredDatasetId = homepage.fields.featuredDatasetId
+        if (featuredDatasetId != '') {
+          const url = `${process.env.discover_api_host}/datasets/${featuredDatasetId}`
+          await $axios.$get(url).then(({ name, description, banner }) => {
+            fields = { ...fields, 'featuredDataset': { 'title': name, 'description': description, 'banner': banner, 'id': featuredDatasetId } }
+          })
+        }
+        if (fields.featuredProject.fields.institution != undefined) {
+          const institutionId = fields.featuredProject.fields.institution.sys.id
+          await client.getEntry(institutionId).then(( response ) => {
+            fields.featuredProject.fields = { ...fields.featuredProject.fields, 'banner': response.fields.logo.fields.file.url }
+          })
+        }
+        return fields
+      }).catch(e => {
+        console.error(e);
+        //The contentful error handle mixin will
+        //emit a message on the failure.
+        return { contentfulError: true }
       })
-      .catch(console.error)
   },
 
-  mounted() {
-    // When trying to do this using a middleware, the server would redirect correctly initially after login,
-    // but then another unknown redirect back to / was happening that would cause the page to load incorrectly.
-    // The only downside to doing it this way is a momentary display of the home page first before redirecting.
-    const authRedirectUrl = this.$cookies.get('auth-redirect-url')
+  beforeMount() {
+    // When trying to do federated sign in using a middleware (like we do for sign out), Cognito's callback would only
+    // execute client-side (after the middleware had already redirected to the new page) causing it to overwrite the 
+    // previous redirect. This issue was supposed to be addressed by https://github.com/aws-amplify/amplify-js/pull/3588, 
+    // but attempting to handle dynamic routing after amplify federated sign in via a custom state hook as suggested 
+    // here: https://github.com/aws-amplify/amplify-js/issues/3125#issuecomment-814265328 did not work
+    const authRedirectUrl = this.$cookies.get('sign-in-redirect-url')
     if (authRedirectUrl) {
-      this.$cookies.set('auth-redirect-url', null)
+      this.$cookies.set('sign-in-redirect-url', null)
       this.$router.push(authRedirectUrl)
     }
   },
@@ -84,12 +99,13 @@ export default {
   data: () => {
     return {
       featuredData: [],
-      newsAndEvents: [],
-      testimonials: [],
+      portalFeatures: [],
+      featuredProject: {},
+      featuredDatasetId: '',
+      featuredDataset: {},
       heroCopy: '',
       heroHeading: '',
-      heroButtonLink: '',
-      heroButtonLabel: ''
+      heroImage: {}
     }
   },
 

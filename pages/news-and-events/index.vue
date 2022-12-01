@@ -92,7 +92,7 @@
           <community-spotlight-listings :stories="stories.items" :bottom-link="true" />
         </div>
 
-        <div class="heading2 mt-32 mb-16">Stay Connected</div>
+        <div id="stayConnected" class="heading2 mt-32 mb-16">Stay Connected</div>
         <div class="subpage py-16">
           <el-row :gutter="32">
             <el-col :xs="24" :sm="12" class="newsletter-wrap">
@@ -165,6 +165,7 @@ import NewsletterForm from '@/components/NewsletterForm/NewsletterForm.vue';
 import FeaturedEvent from '@/components/FeaturedEvent/FeaturedEvent.vue';
 import CommunitySpotlightListings from '~/components/CommunitySpotlight/CommunitySpotlightListings.vue';
 
+import ErrorMessages from '@/mixins/error-messages'
 import MarkedMixin from '@/mixins/marked'
 
 import createClient from '@/plugins/contentful.js';
@@ -193,8 +194,16 @@ export default Vue.extend<Data, Methods, Computed, never>({
     CommunitySpotlightListings
   },
 
-  asyncData() {
-    return fetchData(client, '', 2)
+  asyncData({ error }) {
+    try {
+      return fetchData(client, '', 2)
+    }
+    catch(e) {
+      //Handle uncaught error
+      console.error(e)
+      const message = ErrorMessages.methods.contentful()
+      return error({ statusCode: 400, message: message, display: true, error: e})
+    }
   },
 
   watch: {
